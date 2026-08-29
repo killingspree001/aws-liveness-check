@@ -1,51 +1,37 @@
 #!/usr/bin/env python3
 
-from typing import List
-
 from infra.facelivenessbackend.topology import FaceLiveness
+from infra.frontend.cognito.topology import FaceLivenessCognito
 from infra.interfaces import IRflStack
-import aws_cdk as core
 from constructs import Construct
-from aws_cdk import (
-    aws_ec2 as ec2,
-)
-
+from aws_cdk import CfnOutput
 
 
 class DefaultRflStack(IRflStack):
   '''
   Represents the simple deployment environment for Rfl.
+
+  The upstream sample also provisioned a CodeCommit repo plus an Amplify
+  hosted copy of the frontend. CodeCommit is no longer available to new
+  AWS accounts and the frontend is run locally here, so that part is
+  dropped and the values the local frontend needs are exported instead.
   '''
   def __init__(self, scope:Construct, id:str, rfl_stack_name:str, **kwargs)->None:
     self.__zone_name = rfl_stack_name
     super().__init__(scope, id, **kwargs)
-    
+
     assert self.rfl_stack_name is not None
-    
-  
-    # Create the FaceLiveness
+
+    # Backend: two Lambdas behind API Gateway
     faceliveness = FaceLiveness(self,'FaceLiveness', rfl_stack=self)
 
-
-    #Setup FE
-
-    from infra.frontend.topology import FaceLivenessFrontEnd
-    from infra.frontend.topology import TriggerFrontEndBuild
-    from infra.frontend.topology import FaceLivenessFrontEndBuildStatus
-    from infra.frontend.cognito.topology import FaceLivenessCognito
-
-    # setup Amazon Cognito for Face Liveness
-
+    # Cognito user pool / identity pool used by the Amplify liveness component
     cognito = FaceLivenessCognito(self,"RflCognito",rfl_stack=self )
 
-    feapp = FaceLivenessFrontEnd(self,"RflWebAPP",rfl_stack=self, apigateway=faceliveness.api_gateway, cognito= cognito)
-
-    triggerfeapp = TriggerFrontEndBuild(self,"RflWebAPPTrigger",rfl_stack=self,amplifyApp=feapp)
-    # feapp = RflFrontEnd(self,"RflWebAPP",rfl_stack=self)
-    triggerfeapp.node.add_dependency(feapp)
-    feappstatus = FaceLivenessFrontEndBuildStatus(self,"RflWebAPPStatus",rfl_stack=self, amplifyApp=feapp , buildTrigger=triggerfeapp)
-    feappstatus.node.add_dependency(triggerfeapp)
-
+    CfnOutput(self, "ApiUrl", value=faceliveness.api_gateway.rest_api_url())
+    CfnOutput(self, "IdentityPoolId", value=cognito.idp.ref)
+    CfnOutput(self, "UserPoolId", value=cognito.cognito.user_pool_id)
+    CfnOutput(self, "WebClientId", value=cognito.client.user_pool_client_id)
 
   @property
   def rfl_stack_name(self)->str:

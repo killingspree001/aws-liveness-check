@@ -55,3 +55,6 @@ amplify/team-provider-info.json
 
 .venv
 .env
+
+# local deploy outputs
+cdk-outputs.json

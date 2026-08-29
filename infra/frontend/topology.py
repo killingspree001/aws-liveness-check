@@ -105,7 +105,7 @@ class FaceLivenessFrontEndBuildStatus(Construct):
                                                 timeout=core.Duration.minutes(
                                                     10),
                                                 tracing=lambda_.Tracing.ACTIVE,
-                                                runtime=lambda_.Runtime.PYTHON_3_9,
+                                                runtime=lambda_.Runtime.PYTHON_3_12,
                                                 handler='index.lambda_handler')
 
         self.lambda_function.role.add_managed_policy(
