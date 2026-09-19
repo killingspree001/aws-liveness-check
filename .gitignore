@@ -58,3 +58,6 @@ amplify/team-provider-info.json
 
 # local deploy outputs
 cdk-outputs.json
+
+# cloudflare local cache
+.wrangler
