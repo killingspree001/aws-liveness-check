@@ -18,7 +18,22 @@ const STEPS = [
   },
 ];
 
-function Landing({ onStart }) {
+function Landing({ onStart, onWarm }) {
+  const warmed = React.useRef(false);
+
+  // Pull the liveness chunk down quietly while they read this page, so
+  // pressing start does not stall on a cold download.
+  const warm = React.useCallback(() => {
+    if (warmed.current || !onWarm) return;
+    warmed.current = true;
+    onWarm();
+  }, [onWarm]);
+
+  React.useEffect(() => {
+    const timer = setTimeout(warm, 1500);
+    return () => clearTimeout(timer);
+  }, [warm]);
+
   return (
     <section className="landing">
       <div className="landing-copy">
@@ -35,7 +50,12 @@ function Landing({ onStart }) {
         </p>
 
         <div className="cta-row">
-          <button className="btn btn-primary" onClick={onStart}>
+          <button
+            className="btn btn-primary"
+            onClick={onStart}
+            onMouseEnter={warm}
+            onFocus={warm}
+          >
             Start liveness check
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path

@@ -1,6 +1,14 @@
 import React, { useEffect } from "react";
+import { Amplify } from "aws-amplify";
+import { ThemeProvider } from "@aws-amplify/ui-react";
 import "@aws-amplify/ui-react/styles.css";
 import { FaceLivenessDetector } from "@aws-amplify/ui-react-liveness";
+
+import awsexports from "../aws-exports";
+
+// Configured here rather than in App so that Amplify, its styles and the
+// detector all stay inside this lazily loaded chunk.
+Amplify.configure(awsexports);
 
 const endpoint = process.env.REACT_APP_ENV_API_URL || "";
 
@@ -69,13 +77,15 @@ function FaceLiveness({ faceLivenessAnalysis, onCancel }) {
     );
   } else {
     body = (
-      <FaceLivenessDetector
-        sessionId={sessionId}
-        region={process.env.REACT_APP_REGION || "us-east-1"}
-        onAnalysisComplete={handleAnalysisComplete}
-        onUserCancel={onCancel}
-        onError={handleError}
-      />
+      <ThemeProvider>
+        <FaceLivenessDetector
+          sessionId={sessionId}
+          region={process.env.REACT_APP_REGION || "us-east-1"}
+          onAnalysisComplete={handleAnalysisComplete}
+          onUserCancel={onCancel}
+          onError={handleError}
+        />
+      </ThemeProvider>
     );
   }
 

@@ -1,17 +1,35 @@
-import React from "react";
-import { Amplify } from "aws-amplify";
-import { ThemeProvider } from "@aws-amplify/ui-react";
-import "@aws-amplify/ui-react/styles.css";
+import React, { Suspense } from "react";
 import "./App.css";
 
 import Landing from "./Components/Landing";
-import FaceLiveness from "./Components/FaceLiveness";
 import Result from "./Components/Result";
-import awsexports from "./aws-exports";
 
-Amplify.configure(awsexports);
+// The Amplify liveness SDK is by far the heaviest thing we ship, and it is
+// only needed once someone actually starts a check. Keeping it in its own
+// chunk means the landing page paints without it.
+const FaceLiveness = React.lazy(() => import("./Components/FaceLiveness"));
+const preloadCheck = () => import("./Components/FaceLiveness");
 
 const STEPS = ["Intro", "Check", "Result"];
+
+function CheckFallback() {
+  return (
+    <section className="check">
+      <div className="check-head">
+        <div>
+          <p className="eyebrow">Step two</p>
+          <h2 className="check-title">Warming up the camera</h2>
+        </div>
+      </div>
+      <div className="detector-card">
+        <div className="detector-state">
+          <span className="spinner" />
+          <p>Loading the liveness module</p>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 function App() {
   // landing -> check -> result
@@ -38,44 +56,44 @@ function App() {
   const stepIndex = view === "landing" ? 0 : view === "check" ? 1 : 2;
 
   return (
-    <ThemeProvider>
-      <div className="shell">
-        <header className="topbar">
-          <button className="wordmark" onClick={goHome} aria-label="Back to start">
-            <span className="wordmark-dot" />
-            Liveness<em>Lab</em>
-          </button>
-          <ol className="steps" aria-label="Progress">
-            {STEPS.map((label, i) => (
-              <li
-                key={label}
-                className={
-                  i === stepIndex ? "step is-current" : i < stepIndex ? "step is-done" : "step"
-                }
-              >
-                <span className="step-num">0{i + 1}</span>
-                <span className="step-label">{label}</span>
-              </li>
-            ))}
-          </ol>
-        </header>
+    <div className="shell">
+      <header className="topbar">
+        <button className="wordmark" onClick={goHome} aria-label="Back to start">
+          <span className="wordmark-dot" />
+          Liveness<em>Lab</em>
+        </button>
+        <ol className="steps" aria-label="Progress">
+          {STEPS.map((label, i) => (
+            <li
+              key={label}
+              className={
+                i === stepIndex ? "step is-current" : i < stepIndex ? "step is-done" : "step"
+              }
+            >
+              <span className="step-num">0{i + 1}</span>
+              <span className="step-label">{label}</span>
+            </li>
+          ))}
+        </ol>
+      </header>
 
-        <main className="stage">
-          {view === "landing" && <Landing onStart={startCheck} />}
-          {view === "check" && (
+      <main className="stage">
+        {view === "landing" && <Landing onStart={startCheck} onWarm={preloadCheck} />}
+        {view === "check" && (
+          <Suspense fallback={<CheckFallback />}>
             <FaceLiveness faceLivenessAnalysis={handleAnalysis} onCancel={goHome} />
-          )}
-          {view === "result" && (
-            <Result analysis={analysis} onRetry={startCheck} onHome={goHome} />
-          )}
-        </main>
+          </Suspense>
+        )}
+        {view === "result" && (
+          <Result analysis={analysis} onRetry={startCheck} onHome={goHome} />
+        )}
+      </main>
 
-        <footer className="foot">
-          <span>Powered by Amazon Rekognition Face Liveness</span>
-          <span className="foot-region">us-east-1</span>
-        </footer>
-      </div>
-    </ThemeProvider>
+      <footer className="foot">
+        <span>Powered by Amazon Rekognition Face Liveness</span>
+        <span className="foot-region">us-east-1</span>
+      </footer>
+    </div>
   );
 }
 
