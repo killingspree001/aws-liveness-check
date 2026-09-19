@@ -39,10 +39,19 @@ class FaceLivenessCognito(Construct):
                                    }), assume_role_action='sts:AssumeRoleWithWebIdentity'),
                                    description='role for amplify rfl-prod app',
 
-                                   managed_policies=[
-                                       iam.ManagedPolicy.from_aws_managed_policy_name(
-                                           managed_policy_name='AmazonRekognitionFullAccess')
-                                   ])
+                                   # Anyone who opens the public site can pick up
+                                   # these guest credentials, so they get the one
+                                   # call the liveness component actually makes
+                                   # rather than the whole of Rekognition.
+                                   inline_policies={
+                                       'FaceLivenessStreamOnly': iam.PolicyDocument(
+                                           statements=[
+                                               iam.PolicyStatement(
+                                                   actions=[
+                                                       'rekognition:StartFaceLivenessSession'],
+                                                   resources=['*'])
+                                           ])
+                                   })
 
         self.idpAttachment = cognito.CfnIdentityPoolRoleAttachment(
             self, 'RFL-IdentityPool-Role-Attachment', identity_pool_id=self.idp.ref, roles={"unauthenticated": self.unAuthrole.role_arn})
