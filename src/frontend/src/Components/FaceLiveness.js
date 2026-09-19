@@ -44,6 +44,12 @@ function FaceLiveness({ faceLivenessAnalysis, onCancel }) {
         body: JSON.stringify({ sessionid: sessionId }),
       });
       const data = await res.json();
+      // A failed or still running session comes back without a usable body,
+      // and silently doing nothing here just strands the user on this screen.
+      if (!data || !data.body || !data.body.Status) {
+        setError("The check finished but no result came back. Please try again.");
+        return;
+      }
       faceLivenessAnalysis(data.body);
     } catch (e) {
       setError("The check finished but the result could not be fetched.");

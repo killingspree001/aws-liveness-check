@@ -42,7 +42,9 @@ function App() {
   };
 
   const handleAnalysis = (data) => {
-    if (data && data.Confidence !== undefined) {
+    // A failed check still deserves the result screen, and it arrives with a
+    // Status but often no confidence score at all.
+    if (data && data.Status) {
       setAnalysis(data);
       setView("result");
     }
